@@ -18,23 +18,26 @@
 
   The macro implementation in "tupl_impl_pre.hpp" should be preprocessed
   on installation to generate "tupl_impl.hpp" header. It's best to auto-
-  mate this preprocessing step. The gen header is used as fallback if
-  the preprocessed .
+  mate this preprocessing step. The 'pre' header is used as fallback if
+  the tupl_impl.hpp header is not on the include path.
 
-  You can manually preprocess with a command line like:
+  You can manually preprocess tupl_impl_pre.hpp -> tupl_impl.hpp
+  with a command line like:
 
-    > c++ -nostdinc -C -E -P -o tupl_impl.hpp tupl_impl_pre.hpp
+   > cc -I./subprojects/IREPEAT -MMD -C -E -P -o tupl_impl.hpp
+                                                 tupl_impl_pre.hpp
 
-    > cl /Zc:preprocessor /EP 
+   > cl /I:../subprojects/IREPEAT /Zc:preprocessor /C /EP 
 
   Requires __VA_OPT__  preprocessor support (MSVC cl /Zc:preprocessor)
   lack of __VA_OPT__ is auto-detected via a static_assert error message.
+  (other useful cpp flags are -nostdinc -Wno-c++20-compat)
 
   Namespace id 'ltl' and class template id 'tupl' are configurable via
-  TUPL_NAMESPACE_ID and TUPL_ID defines. The arity is also configurable.
+  NAMESPACE_ID and TUPL_ID defines. The arity is also configurable.
 
-  E.g. to generate ns::tuple add -DTUPL_NAMESPACE_ID=ns -DTUPL_ID=tuple,
-  or to generate with no namespace -DTUPL_NAMESPACE_ID=
+  E.g. to generate ns::tuple add -DNAMESPACE_ID=ns -DTUPL_ID=tuple,
+  or to generate with no namespace -DNAMESPACE_ID=
 */
 
 #include <compare>

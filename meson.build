@@ -13,11 +13,11 @@ if meson.get_compiler('cpp').get_id() == 'msvc'
 elif meson.get_compiler('cpp').get_id() == 'clang'
   extra_args = ['-std=c++20']
   prepro_args = ['-I.','-I../subprojects/IREPEAT','-MMD','-nostdinc','-C','-E','-P','-Wno-c++20-compat']
-  output_flag = '-o '
+  output_flag = '-o'
 else
   extra_args = ['-std=c++20']
   prepro_args = ['-I.','-I../subprojects/IREPEAT','-MMD','-nostdinc','-C','-E','-P']
-  output_flag = '-o '
+  output_flag = '-o'
 endif
 
 tupl_impl_header = custom_target('tupl_impl.hpp',

@@ -18,11 +18,11 @@
 
 #include "IREPEAT.hpp"
 
-#define TUPL_MAX_ARITY CAT(TUPL_ID,_max_arity) // tupl_max_arity
-#define TUPL_CONSTRUCT CAT(TUPL_ID,_construct) // tupl_construct
-#define TUPL_MAKE      CAT(TUPL_ID,_make)      // tupl_make
+#define TUPL_MAX_ARITY CAT(TUPL_ID,_max_arity) // tupl_max_arity value
+#define TUPL_CONSTRUCT CAT(TUPL_ID,_construct) // tupl_construct type
+#define TUPL_MAKE      CAT(TUPL_ID,_make)      // tupl_make function
 
-#include "namespace.hpp"
+#include "namespace.hpp" // Optional namespace, defaults to ltl
 
 template <typename T> using DEFAULT_ASSIGNABLE = std::bool_constant<
                             default_assignable<T>>;
@@ -40,12 +40,12 @@ inline constexpr std::size_t TUPL_MAX_ARITY = HEXLIT(TUPL_MAX_INDEX)+1;
 template <typename...T> struct TUPL_ID;
 //
 
-// CTAD deduce values including arrays (i.e. no decay to pointer)
+// CTAD deduce values including arrays (i.e. no decay, unlike std tuple)
 template <typename...E>
 TUPL_ID(E&&...) -> TUPL_ID<std::remove_cvref_t<E>...>;
 //
 
-// size(tupl) - for constexpr size decltype(size(tupl))()
+// size(tupl): the number of tupl elements as an integral constant
 template <typename...A> constexpr auto size(TUPL_ID<A...> const&) ->
   std::integral_constant<std::size_t,sizeof...(A)> { return {}; }
 
@@ -64,6 +64,7 @@ template <typename...T, template<typename>class P>
 inline constexpr bool tupl_types_all<TUPL_ID<T...>,P> = (P<T>() && ...);
 //
 
+// tupl_val concept: tuplish type with all object-type elements
 template <typename T>
 concept tupl_val = tuplish<T>
      && tupl_types_all<std::remove_cvref_t<T>,std::is_object>;
@@ -157,29 +158,6 @@ constexpr TUPL_ID<L...>& ass(TUPL_ID<L...>& lhs, R&& rhs) noexcept(
 }
 //
 
-// assign(tupl,datum...) foward decl
-//template <typename...R, typename...A>
-//constexpr TUPL_ID<A...>& assign(TUPL_ID<A...>&, R&&) noexcept(
-//  (std::is_nothrow_copy_assignable_v<std::remove_all_extents_t<A>> && ...)
-//);
-
-//template <typename...E>
-//constexpr auto make_tupl(E&&...e) -> tupl<std::remove_cvref_t<E>...> {
-//    tupl<std::remove_cvref_t<E>...> o; // what if not direct initializable
-//    o([&e...](std::remove_cvref_t<E>&...t){(assign(t,(E&&)e),...);});
-//    return o;
-//}
-
-// tupl<T...> size N pack specialization
-//#define TUPL_SPECIALIZATION(N) \
-//template <TYPENAME_DECLS(N)> struct TUPL_ID<TUPL_TYPE_IDS(N)>\
-//{ MEMBER_DECLS(N) OP3WAY OPASSIGN MAP_V(TUPL_DATA_IDS(N)) };
-//
-
-//#define VREPEAT_COUNT TUPL_MAX_INDEX
-//#define VREPEAT_MACRO TUPL_SPECIALIZATION
-//#include "VREPEAT.hpp"
-
 // tupl<T...> size N pack specializations
 
 #define TUPL_TYPE_ID XD
@@ -194,9 +172,8 @@ constexpr TUPL_ID<L...>& ass(TUPL_ID<L...>& lhs, R&& rhs) noexcept(
 #define TUPL_DATA_FWDS IREPEAT(VREPEAT_INDEX,TUPL_DATA_FWD,COMMA)
 #define MEMBER_DECLS IREPEAT(VREPEAT_INDEX,MEMBER_DECL,NOSEP)
 
-#define MAP_V(...) \
-constexpr decltype(auto) operator()(auto f) noexcept(noexcept(f(__VA_ARGS__))) \
-{ return f(__VA_ARGS__); }
+#define MAP_V(...) constexpr decltype(auto) operator()(auto f) \
+noexcept(noexcept(f(__VA_ARGS__))) { return f(__VA_ARGS__); }
 
 #define TUPL_PASS 1
 #define VREPEAT_COUNT TUPL_MAX_INDEX
@@ -301,7 +278,8 @@ inline constexpr int tupl_indexof<X,TUPL_ID<A...>> = indexof<X,A...>;
 #undef RECURz
 
 template <auto...A, typename...E>
-constexpr auto dupl(TUPL_ID<E...>const& a) -> TUPL_ID<decltype(+get<A>(a))...>
+constexpr auto dupl(TUPL_ID<E...>const& a)
+  -> TUPL_ID<decltype(+get<A>(a))...>
     { return {get<A>(a)...}; };
 
 template <typename...A, typename...E>

@@ -20,7 +20,7 @@ struct c16 { char data[16]; };
 struct BIG { char data[20]; };
 
 static_assert( std::is_aggregate_v<tupl<int&,long&,char&>> );
-static_assert( std::is_trivial_v<tupl<int&,long&,char&>> );
+//static_assert( std::is_trivial_v<tupl<int&,long&,char&>> );
 
 static_assert( std::same_as<tupl_ass_t<tupl<int&,long&,char&>>,
                                        tupl<int, long, char>> );

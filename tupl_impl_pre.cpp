@@ -16,7 +16,7 @@
 #include "tupl_impl_noedit_warn.hpp" // generated file; Don't edit this!
 #endif
 
-#include "IREPEAT.hpp" 
+#include "IREPEAT.hpp"
 
 #define TUPL_MAX_ARITY CAT(TUPL_ID,_max_arity) // tupl_max_arity
 #define TUPL_CONSTRUCT CAT(TUPL_ID,_construct) // tupl_construct
@@ -70,10 +70,13 @@ concept tupl_val = tuplish<T>
 
 // tupl_type_map<tupl<T...>, map>
 //            -> tupl<typename map<T>::type...>
-template <typename T, template<typename...>class M>
-auto tupl_type_map = not defined(tupl_type_map<T,M>);
-template <typename...T, template<typename...>class M>
-TUPL_ID<typename M<T>::type...> tupl_type_map<TUPL_ID<T...>,M>;
+template <template<typename...>class, typename>
+struct tupl_type_map;
+
+template <template<typename...>class M, typename...T>
+struct tupl_type_map<M, TUPL_ID<T...>> {
+    using type = TUPL_ID<M<T>...>;
+};
 //
 
 // assign_fwd<U>  'forwarding' carrier type for assignment operator=
@@ -82,16 +85,15 @@ TUPL_ID<typename M<T>::type...> tupl_type_map<TUPL_ID<T...>,M>;
 //  -> V&&         otherwise (won't accept V& so user must choose)
 template <typename U, typename V = std::remove_cvref_t<U>>
   requires std::is_move_assignable_v<std::remove_all_extents_t<V>>
-using assign_fwd = std::conditional<
+using assign_fwd = std::conditional_t<
   std::is_trivially_copyable_v<V> && sizeof(V)<=16, V,
                  std::conditional_t<
   std::is_lvalue_reference_v<U> || std::is_array_v<V>, V const&, V&&>>;
 //
-template <typename U> using assign_fwd_t = typename assign_fwd<U>::type;
+
 //
-//
-template <typename Tupl> 
-using tupl_ass_t = decltype(tupl_type_map<Tupl,assign_fwd>);
+template <typename Tupl>
+using tupl_ass_t = typename tupl_type_map<assign_fwd,Tupl>::type;
 //
 
 // tupl<> zero-size pack specialization
@@ -102,9 +104,9 @@ struct TUPL_ID<> {
      noexcept(noexcept(f())) { return f(); }
 };
 
-// assign(l): with a single-arg does value init(s); l = {}
+// ass(l): with a single-arg does value init(s); l = {}
 template <typename L>
-constexpr L& assign(L& l) noexcept(noexcept(flat_index(l)={}))
+constexpr L& ass(L& l) noexcept(noexcept(flat_index(l)={}))
   requires requires { {flat_index(l)={}}; }
 {
   if constexpr (!std::is_array_v<L>)
@@ -116,9 +118,9 @@ constexpr L& assign(L& l) noexcept(noexcept(flat_index(l)={}))
   }
 }
 //
-// assign(l,r)
+// ass(l,r)
 template <typename L, typename R>
-constexpr L& assign(L& l, R&& r) noexcept(noexcept(assign(l)))
+constexpr L& ass(L& l, R&& r) noexcept(noexcept(ass(l)))
   requires same_extents_v<L,std::remove_cvref_t<R>>
         && requires { {flat_index(l) = flat_index((R&&)r)}; }
 {
@@ -132,12 +134,12 @@ constexpr L& assign(L& l, R&& r) noexcept(noexcept(assign(l)))
 }
 //
 template <typename L>
-constexpr L& assign(L& l, L const& r) noexcept(noexcept(assign(l,r))) {
-  return assign<L,L const&>(l,r);
+constexpr L& ass(L& l, L const& r) noexcept(noexcept(ass(l,r))) {
+  return ass<L,L const&>(l,r);
 }
 //
 template <tuplish R, typename...L>
-constexpr TUPL_ID<L...>& assign(TUPL_ID<L...>& lhs, R&& rhs) noexcept(
+constexpr TUPL_ID<L...>& ass(TUPL_ID<L...>& lhs, R&& rhs) noexcept(
  std::is_reference_v<R>
 ? (std::is_nothrow_move_assignable_v<std::remove_all_extents_t<L>>&&...)
 : (std::is_nothrow_copy_assignable_v<std::remove_all_extents_t<L>>&&...)
@@ -146,9 +148,9 @@ constexpr TUPL_ID<L...>& assign(TUPL_ID<L...>& lhs, R&& rhs) noexcept(
   lhs([&rhs](std::remove_reference_t<L>&...t) {
     rhs([&t...](auto&&...u) {
       if constexpr (std::is_reference_v<R>)
-        (assign(t,(std::remove_reference_t<decltype(u)>&&)u),...);
+        (ass(t,(std::remove_reference_t<decltype(u)>&&)u),...);
       else
-        (assign(t,u),...);
+        (ass(t,u),...);
     });
   });
   return lhs;
@@ -198,7 +200,7 @@ constexpr decltype(auto) operator()(auto f) noexcept(noexcept(f(__VA_ARGS__))) \
 
 #define TUPL_PASS 1
 #define VREPEAT_COUNT TUPL_MAX_INDEX
-#define VREPEAT_MACRO ../../tupl_impl_pre.hpp
+#define VREPEAT_MACRO ../../tupl_impl_pre.cpp
 #include "VREPEAT.hpp"
 
 #undef TUPL_PASS
@@ -213,9 +215,9 @@ struct TUPL_ID<TUPL_TYPE_IDS> {
  friend auto operator<=>(TUPL_ID const&,TUPL_ID const&)
    requires tupl_types_all<TUPL_ID,MEMBER_DEFAULT_3WAY> = default;
  template<typename...>constexpr TUPL_ID& operator=(tupl_ass_t<TUPL_ID> r)
-   requires (tupl_val<TUPL_ID>) {return assign(*this,r);}
+   requires (tupl_val<TUPL_ID>) {return ass(*this,r);}
  template<typename...>constexpr TUPL_ID const& operator=(tupl_ass_t<TUPL_ID> r) const
-   requires (!tupl_val<TUPL_ID>) {return assign(*this,r);}
+   requires (!tupl_val<TUPL_ID>) {return ass(*this,r);}
  MAP_V(TUPL_DATA_IDS)
 };
 

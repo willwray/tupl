@@ -23,25 +23,18 @@ endif
 tupl_impl_header = custom_target('tupl_impl.hpp',
   input: 'tupl_impl_pre.cpp',
   output: 'tupl_impl.hpp',
-  command: [meson.get_compiler('cpp').cmd_array(),
-                            prepro_args, output_flag+'@OUTPUT@', '@INPUT@'],
+  command: [meson.get_compiler('cpp').cmd_array(), prepro_args, output_flag+'@OUTPUT@', '@INPUT@'],
   depfile: 'tupl_impl.d',
   install: true,
   install_dir: meson.source_root()
 )
-
-#tupl_impl_dep = declare_dependency(
-#  include_directories : include_directories('.'),
-#  compile_args : extra_args,
-#  sources : ['tupl.hpp', tupl_impl_header]
-#).partial_dependency(includes : true, compile_args : true, sources : true)
 
 tupl_dep = declare_dependency(
   dependencies: [c_array_support_dep, IREPEAT_dep],
   include_directories : include_directories('.'),
   compile_args : extra_args,
   sources : [tupl_impl_header]
-).partial_dependency(includes : true, compile_args : true, sources : true)
+).partial_dependency(includes: true, compile_args: true, sources: true)
 
 test('test tupl',
   executable('test_tupl', 'tupl_test.cpp',

@@ -214,15 +214,24 @@ struct TUPL_ID<TUPL_TYPE_IDS> {
 #undef MEMBER_DECL
 #undef TUPL_TYPE_ID
 
+#ifdef __GNUC__
+#define UNREACHABLE() __builtin_unreachable()
+#elif defined(_MSC_VER)
+#define UNREACHABLE() __assume(false)
+#else
+#define UNREACHABLE()
+#endif
+
 template <tuplish T> requires (! tupl_types_all<T,MEMBER_DEFAULT_3WAY>
                               && tupl_types_all<T,THREE_WAY_COMPARABLE>)
 constexpr auto operator<=>(T const& l,T const& r) noexcept {
- constexpr int s = decltype(size(l))();
+ constexpr auto s = decltype(size(l))();
  constexpr compare_three_way cmp;
 #define MACRO(N) if constexpr(HEXLIT(N)<s){if(auto c=cmp(\
 l.TUPL_DATA_ID(N),r.TUPL_DATA_ID(N));c!=0||1+HEXLIT(N)==s)return c;}
  IREPEAT(TUPL_MAX_INDEX,MACRO,NOSEP)
 #undef MACRO
+ UNREACHABLE();
 }
 
 template <tuplish T> requires (! tupl_types_all<T,MEMBER_DEFAULT_3WAY>
@@ -234,11 +243,12 @@ template <tuplish T> requires (! tupl_types_all<T,MEMBER_DEFAULT_3WAY>
                             && ! tupl_types_all<T,THREE_WAY_COMPARABLE>
                               && tupl_types_all<T,EQUALITY_COMPARABLE>)
 constexpr bool operator==(T const& l,T const& r) noexcept {
-    constexpr int s = decltype(size(l))();
+    constexpr auto s = decltype(size(l))();
 #define MACRO(N) if constexpr(HEXLIT(N)<s){if(bool c=\
 l.TUPL_DATA_ID(N)==r.TUPL_DATA_ID(N);!c||1+HEXLIT(N)==s)return c;}
  IREPEAT(TUPL_MAX_INDEX,MACRO,NOSEP)
 #undef MACRO
+ UNREACHABLE();
 }
 
 // get<I>(t)
@@ -250,6 +260,7 @@ template <int I> constexpr auto&& get(tuplish auto&& t) noexcept
 #define MACRO(N) if constexpr(I==HEXLIT(N))return((T)t).TUPL_DATA_ID(N);
  IREPEAT(TUPL_MAX_INDEX,MACRO,ELSE)
 #undef MACRO
+ UNREACHABLE();
 }
 
 // Index of first element of type X
@@ -262,6 +273,7 @@ inline constexpr int indexof = []() consteval {
  IREPEAT(TUPL_MAX_INDEX,MACRO,ELSE)
 #undef MACRO
 #undef TUPL_TYPE
+ UNREACHABLE();
 }();
 //
 template <typename X, typename T>

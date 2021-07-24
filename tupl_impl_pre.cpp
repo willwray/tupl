@@ -200,20 +200,6 @@ struct TUPL_ID<TUPL_TYPE_IDS> {
 
 #else
 
-//#undef TUPL_SPECIALIZATION
-#undef OP3WAY
-#undef TYPENAMES
-#undef TYPENAMEs
-#undef TYPENAMEz
-#undef TYPENAME_DECLs
-#undef TYPENAME_DECLz
-#undef TYPENAME_DECLS
-#undef TYPENAME_DECL
-#undef MEMBER_DECLs
-#undef MEMBER_DECLS
-#undef MEMBER_DECL
-#undef TUPL_TYPE_ID
-
 #ifdef __GNUC__
 #define UNREACHABLE() __builtin_unreachable()
 #elif defined(_MSC_VER)
@@ -273,6 +259,7 @@ inline constexpr int indexof = []() consteval {
  IREPEAT(TUPL_MAX_INDEX,MACRO,ELSE)
 #undef MACRO
 #undef TUPL_TYPE
+#undef ELSE
  UNREACHABLE();
 }();
 //
@@ -281,13 +268,7 @@ inline constexpr int tupl_indexof = not defined(tupl_indexof<X,T>);
 template <typename X, typename...A>
 inline constexpr int tupl_indexof<X,TUPL_ID<A...>> = indexof<X,A...>;
 
-#undef MACRO
-#undef SEP
-
-#undef EXPAND
-#undef RECURS
-#undef RECURs
-#undef RECURz
+#undef UNREACHABLE
 
 template <auto...A, typename...E>
 constexpr auto dupl(TUPL_ID<E...>const& a)
@@ -298,10 +279,34 @@ template <typename...A, typename...E>
 constexpr auto dupl(TUPL_ID<E...>const& a) -> TUPL_ID<A...>
     { return {get<A>(a)...}; };
 
+#include "IREPEAT_UNDEF.hpp"
+
+#undef MAP_V
+
+#undef MEMBER_DECLS
+#undef TUPL_DATA_FWDS
+#undef TYPENAME_DECLS
+#undef TUPL_DATA_IDS
+#undef TUPL_TYPE_IDS
+
+#undef MEMBER_DECL
+#undef TUPL_DATA_FWD
+#undef TYPENAME_DECL
 #undef TUPL_DATA_ID
+#undef TUPL_TYPE_ID
+
+#undef TUPL_MAX_INDEX
+#undef TUPL_NUA
+
+#undef TUPL_MAX_ARITY
+#undef TUPL_CONSTRUCT
+#undef TUPL_MAKE
 
 #include "namespace.hpp"
 
+#undef NAMESPACE_ID
 #undef TUPL_ID
+
+#undef TUPL_PASS
 
 #endif

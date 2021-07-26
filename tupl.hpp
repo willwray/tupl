@@ -16,16 +16,16 @@
   
    Depends only on <compare> for three-way operator <=> comparisons.
 
-  The macro implementation in "tupl_impl_pre.cpp" should be preprocessed
+  The macro implementation in "tupl_impl_pre.hpp" should be preprocessed
   on installation to generate "tupl_impl.hpp" header. It's best to auto-
   mate this preprocessing step. The 'pre' header is used as fallback if
   the tupl_impl.hpp header is not on the include path.
 
-  You can manually preprocess tupl_impl_pre.cpp -> tupl_impl.hpp
+  You can manually preprocess tupl_impl_pre.hpp -> tupl_impl.hpp
   with a command line like:
 
    > cc -I./subprojects/IREPEAT -MMD -C -E -P -o tupl_impl.hpp
-                                                 tupl_impl_pre.cpp
+                                                 tupl_impl_pre.hpp
 
    > cl /I:../subprojects/IREPEAT /Zc:preprocessor /C /EP 
 
@@ -48,7 +48,7 @@
 #if __has_include("tupl_impl.hpp")
 #include "tupl_impl.hpp" // Do not edit generated file "tupl_impl.hpp"
 #else
-#include "tupl_impl_pre.cpp" // If you edit "tupl_impl_pre.cpp" then
+#include "tupl_impl_pre.hpp" // If you edit "tupl_impl_pre.hpp" then
                              // remember to regenerate "tupl_impl.hpp"
 #endif
 

@@ -8,7 +8,7 @@ IREPEAT_dep = subproject('IREPEAT').get_variable('IREPEAT_dep')
 
 if meson.get_compiler('cpp').get_id() == 'msvc'
   extra_args = ['/std:c++latest','/Zc:preprocessor']
-  prepro_args = ['/std:c++latest','/Zc:preprocessor','/I.','/I..\subprojects\IREPEAT','/C','/EP','/P']
+  prepro_args = ['/std:c++latest','/Zc:preprocessor','/I.','/I..\subprojects\IREPEAT','/C','/EP','/TP','/P']
   output_flag = '/Fi'
 elif meson.get_compiler('cpp').get_id() == 'clang'
   extra_args = ['-std=c++20']
@@ -21,7 +21,7 @@ else
 endif
 
 tupl_impl_header = custom_target('tupl_impl.hpp',
-  input: 'tupl_impl_pre.cpp',
+  input: 'tupl_impl_pre.hpp',
   output: 'tupl_impl.hpp',
   command: [meson.get_compiler('cpp').cmd_array(), prepro_args, output_flag+'@OUTPUT@', '@INPUT@'],
   depfile: 'tupl_impl.d',

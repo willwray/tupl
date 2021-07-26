@@ -43,17 +43,17 @@ static_assert(!std::is_trivially_default_constructible<tupl_scalar_refs>());
 static_assert( MSVC(!) std::is_trivial_v<tupl_scalar_refs>);
 
 
-static_assert( std::same_as<tupl_ass_t<tupl<int&,long&,char&>>,
-                                       tupl<int, long, char>> );
+static_assert( std::same_as<tupl_assign_fwd_t<tupl<int&,long&,char&>>,
+                                              tupl<int, long, char>> );
 
-static_assert( std::same_as<tupl_ass_t<tupl<int[20]>>,
-                                       tupl<int const(&)[20]>> );
+static_assert( std::same_as<tupl_assign_fwd_t<tupl<int[20]>>,
+                                              tupl<int const(&)[20]>> );
 
-static_assert( std::same_as<tupl_ass_t<tupl<c16>>,
-                                       tupl<c16>> );
+static_assert( std::same_as<tupl_assign_fwd_t<tupl<c16>>,
+                                              tupl<c16>> );
 
-static_assert( std::same_as<tupl_ass_t<tupl<BIG>>,
-                                       tupl<BIG&&>> );
+static_assert( std::same_as<tupl_assign_fwd_t<tupl<BIG>>,
+                                              tupl<BIG&&>> );
 
 void big() {
     tupl c {c16{}};
@@ -82,6 +82,8 @@ void big() {
 
 int main()
 {
+    test_refs();
+
     tupl mut {1,2L,'3'};
     tupl mvt {1,2L,'2'};
     mut = {};

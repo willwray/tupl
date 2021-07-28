@@ -24,6 +24,9 @@
 
 #include "namespace.hpp" // Optional namespace, defaults to ltl
 
+template <typename T, typename U>
+concept same_ish = std::same_as<U, std::remove_cvref_t<T>>;
+
 template <typename T> using DEFAULT_ASSIGNABLE = std::bool_constant<
                             default_assignable<T>>;
 template <typename T> using THREE_WAY_COMPARABLE = std::bool_constant<
@@ -107,26 +110,23 @@ struct TUPL_ID<> {
 //
 
 // customization for tuple-tuple assignment
-template <tuplish L>
-struct assign_to<L>
+template <typename... T>
+struct assign_to<TUPL_ID<T...>>
 {
-  L& l;
+  using value_type = std::conditional_t<
+      tupl_val<TUPL_ID<T...>>,
+      TUPL_ID<T...>, const TUPL_ID<T...>>;
+  
+  value_type& l;
 
-  using value_type = std::remove_cvref_t<L>;
-
-  template <tuplish R>
-  constexpr L& operator=(R&& r) const
-     noexcept( std::is_reference_v<R>
-        ? tupl_types_all<value_type,std::is_nothrow_move_assignable>
-        : tupl_types_all<value_type,std::is_nothrow_copy_assignable> )
-    requires (decltype(size(l))() == decltype(size(r))())
+  template <typename... U>
+  constexpr value_type& operator=(TUPL_ID<U...>& r)
+     noexcept((std::is_nothrow_copy_assignable_v<T> && ...))
+      requires (assignable_from<T&,U> && ...)
   {
-    l([&r](auto&...t) {
-      r([&t...](auto&&...u) {
-        if constexpr (std::is_reference_v<R>)
-          (assign(t,(std::remove_reference_t<decltype(u)>&&)u),...);
-        else
-          (assign(t,u),...);
+    map(l, [&r](T&...t) {
+      map(r, [&t...](U&...u) {
+        (assign(t,u), ...);
       });
     });
     return l;
@@ -138,16 +138,16 @@ struct assign_to<L>
 #define TUPL_TYPE_ID XD
 #define TUPL_DATA_ID xD
 #define TYPENAME_DECL(n) typename TUPL_TYPE_ID(n)
-#define TUPL_DATA_FWD(n) (TUPL_TYPE_ID(n)&&)TUPL_DATA_ID(n)
+#define TUPL_t_DATA_FWD(n) ((decltype(t))t).TUPL_DATA_ID(n)
 #define MEMBER_DECL(n) TUPL_NUA TUPL_TYPE_ID(n) TUPL_DATA_ID(n);
 
 #define TUPL_TYPE_IDS IREPEAT(VREPEAT_INDEX,TUPL_TYPE_ID,COMMA)
 #define TUPL_DATA_IDS IREPEAT(VREPEAT_INDEX,TUPL_DATA_ID,COMMA)
 #define TYPENAME_DECLS IREPEAT(VREPEAT_INDEX,TYPENAME_DECL,COMMA)
-#define TUPL_DATA_FWDS IREPEAT(VREPEAT_INDEX,TUPL_DATA_FWD,COMMA)
+#define TUPL_t_DATA_FWDS IREPEAT(VREPEAT_INDEX,TUPL_t_DATA_FWD,COMMA)
 #define MEMBER_DECLS IREPEAT(VREPEAT_INDEX,MEMBER_DECL,NOSEP)
 
-#define MAP_V(...) constexpr decltype(auto) operator()(auto f) const \
+#define MAP_V(...) friend constexpr decltype(auto) map(same_ish<TUPL_ID> auto&& t, auto f) \
 noexcept(noexcept(f(__VA_ARGS__))) { return f(__VA_ARGS__); }
 
 #define R_TUPL tupl_assign_fwd_t<TUPL_ID>
@@ -169,10 +169,10 @@ struct TUPL_ID<TUPL_TYPE_IDS> {
  friend auto operator<=>(TUPL_ID const&,TUPL_ID const&)
    requires tupl_types_all<TUPL_ID,MEMBER_DEFAULT_3WAY> = default;
  template<typename...>constexpr TUPL_ID& operator=(R_TUPL r)
-   requires (tupl_val<TUPL_ID>) {return assign(*this,r);}
+   requires (tupl_val<TUPL_ID>) {return assign_to<TUPL_ID>{*this} = r;}
  template<typename...>constexpr TUPL_ID const& operator=(R_TUPL r) const
-   requires (!tupl_val<TUPL_ID>) {return assign(*this,r);}
- MAP_V(TUPL_DATA_IDS)
+   requires (!tupl_val<TUPL_ID>) {return assign_to<TUPL_ID>{*this} = r;}
+ MAP_V(TUPL_t_DATA_FWDS)
 };
 
 #else

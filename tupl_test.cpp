@@ -14,9 +14,14 @@ constexpr std::add_const_t<T>& as_const(T& t) noexcept { return t; }
 
 static_assert( tupl{1,2L,'3'} > tupl{1,2L,'2'} );
 
+int mm;
+same_ish<int> auto&& nn = mm;
+
 bool test_refs()
 {
     int i;
+    const tupl<int&> ti{ i };
+    ti = { 1 };
     long j;
     char c;
     tupl<int&,long&,char&> ijc{i,j,c}; // tie
@@ -24,7 +29,7 @@ bool test_refs()
     auto& [x,y,z] = ijc;
   //ijc = { x, y, z }; // FAIL: selects deleted default copy-assignment
     as_const(ijc) = { x, y, z }; // Reference types are top-level const
-
+    
     assert(x == 1 && y == 2 && z == 'd');
     assert(x == get<0>(ijc) && y == get<1>(ijc) && z == get<2>(ijc));
     assert(&x == &get<0>(ijc) && &y == &get<1>(ijc) && &z == &get<2>(ijc));

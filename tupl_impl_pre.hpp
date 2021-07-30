@@ -109,24 +109,36 @@ struct TUPL_ID<> {
 };
 //
 
+template <typename L, typename R>
+inline constexpr bool tupls_assignable {};
+
+template <typename...U, typename...V>
+inline constexpr bool tupls_assignable<TUPL_ID<U...>,TUPL_ID<V...>> =
+                           (assignable_from<U&,V> && ...);
+
 // customization for tuple-tuple assignment
-template <typename... T>
-struct assign_to<TUPL_ID<T...>>
+template <tuplish Lr>
+struct assign_to<Lr>
 {
-  using value_type = std::conditional_t<
-      tupl_val<TUPL_ID<T...>>,
-      TUPL_ID<T...>, const TUPL_ID<T...>>;
-  
+  using L = std::remove_cvref_t<Lr>;
+
+  using value_type = std::conditional_t<tupl_val<L>, L, const L>;
+
   value_type& l;
 
-  template <typename... U>
-  constexpr value_type& operator=(TUPL_ID<U...>& r)
-    noexcept((std::is_nothrow_copy_assignable_v<T> && ...))
-      requires (assignable_from<T&,U> && ...)
+  template <tuplish R>
+    requires (tupls_assignable<L, std::remove_reference_t<R>>)
+  constexpr value_type& operator=(R&& r) noexcept(
+    std::is_reference_v<R>
+    ? tupl_types_all<R, std::is_nothrow_copy_assignable>
+    : tupl_types_all<R, std::is_nothrow_move_assignable>)
   {
-      map(l, [&r](T&...t) {
-          map(r, [&t...](U&...u) {
+      map(l, [&r](auto&...t) {
+          map(r, [&t...](auto&...u) {
+            if constexpr (std::is_reference_v<R>)
               (assign(t,u), ...);
+            else
+              (assign(t,mv(u)), ...);
           });
       });
       return l;
@@ -136,7 +148,7 @@ struct assign_to<TUPL_ID<T...>>
 template <typename... T>
 constexpr void swap(TUPL_ID<T...>& l, decltype(l) r)
   noexcept((std::is_nothrow_swappable_v<T> && ...))
-    requires (std::is_swappable_v<T> && ...)
+    requires (std::swappable<T> && ...)
 {
     map(l, [&r](T&...t) {
         map(r, [&t...](T&...u) {
@@ -144,6 +156,7 @@ constexpr void swap(TUPL_ID<T...>& l, decltype(l) r)
         });
     });
 }
+
 // tupl<T...> size N pack specializations
 
 #define TUPL_TYPE_ID XD

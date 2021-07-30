@@ -1,5 +1,5 @@
 #include "tupl.hpp"
-#include "tupl_swap.hpp"
+
 #include <cassert>
 
 using namespace ltl;
@@ -12,6 +12,35 @@ constexpr std::add_const_t<T>& as_const(T& t) noexcept { return t; }
 #else
 #define MSVC(...)
 #endif
+
+bool test_swap()
+{
+    constexpr tupl tA = {1,2L,'3'};
+    constexpr tupl tB = {2,3L,'4'};
+
+    static_assert( tA == tA && tA != tB && tB == tB );
+
+    auto ta = tA;
+    auto tb = tB;
+
+    assert(ta == tA && tb == tB); // unswapped
+
+    auto& [a0,a1,a2] = ta;
+    auto& [b0,b1,b2] = tb;
+
+    auto tiea = tupl<int&, long&, char&>{a0,a1,a2};
+    auto tieb = tupl<int&, long&, char&>{b0,b1,b2};
+
+    swap(ta,tb);
+
+    assert(ta == tB && tb == tA); // swapped
+
+    swap(tiea,tieb);
+
+    assert(ta == tA && tb == tB); // unswapped
+
+    return true;
+}
 
 static_assert( tupl{1,2L,'3'} > tupl{1,2L,'2'} );
 
@@ -90,6 +119,7 @@ void big() {
 
 int main()
 {
+    test_swap();
     test_refs();
 
     tupl mut {1,2L,'3'};

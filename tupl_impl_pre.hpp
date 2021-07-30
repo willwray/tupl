@@ -121,18 +121,29 @@ struct assign_to<TUPL_ID<T...>>
 
   template <typename... U>
   constexpr value_type& operator=(TUPL_ID<U...>& r)
-     noexcept((std::is_nothrow_copy_assignable_v<T> && ...))
+    noexcept((std::is_nothrow_copy_assignable_v<T> && ...))
       requires (assignable_from<T&,U> && ...)
   {
-    map(l, [&r](T&...t) {
-      map(r, [&t...](U&...u) {
-        (assign(t,u), ...);
+      map(l, [&r](T&...t) {
+          map(r, [&t...](U&...u) {
+              (assign(t,u), ...);
+          });
       });
-    });
-    return l;
+      return l;
   }
 };
 
+template <typename... T>
+constexpr void swap(TUPL_ID<T...>& l, decltype(l) r)
+  noexcept((std::is_nothrow_swappable_v<T> && ...))
+    requires (std::is_swappable_v<T> && ...)
+{
+    map(l, [&r](T&...t) {
+        map(r, [&t...](T&...u) {
+            (std::ranges::swap(t, u), ...);
+        });
+    });
+}
 // tupl<T...> size N pack specializations
 
 #define TUPL_TYPE_ID XD

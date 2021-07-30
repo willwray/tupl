@@ -138,7 +138,7 @@ struct assign_to<TUPL_ID<T...>>
 #define TUPL_TYPE_ID XD
 #define TUPL_DATA_ID xD
 #define TYPENAME_DECL(n) typename TUPL_TYPE_ID(n)
-#define TUPL_t_DATA_FWD(n) ((decltype(t))t).TUPL_DATA_ID(n)
+#define TUPL_t_DATA_FWD(n) ((T&&)t).TUPL_DATA_ID(n)
 #define MEMBER_DECL(n) TUPL_NUA TUPL_TYPE_ID(n) TUPL_DATA_ID(n);
 
 #define TUPL_TYPE_IDS IREPEAT(VREPEAT_INDEX,TUPL_TYPE_ID,COMMA)
@@ -147,8 +147,9 @@ struct assign_to<TUPL_ID<T...>>
 #define TUPL_t_DATA_FWDS IREPEAT(VREPEAT_INDEX,TUPL_t_DATA_FWD,COMMA)
 #define MEMBER_DECLS IREPEAT(VREPEAT_INDEX,MEMBER_DECL,NOSEP)
 
-#define MAP_V(...) friend constexpr decltype(auto) map(same_ish<TUPL_ID> auto&& t, auto f) \
-noexcept(noexcept(f(__VA_ARGS__))) { return f(__VA_ARGS__); }
+#define MAP_V(...) template <same_ish<TUPL_ID> T> friend constexpr \
+decltype(auto) map(T&& t, auto f) noexcept(noexcept(f(__VA_ARGS__)))\
+ { return f(__VA_ARGS__); }
 
 #define R_TUPL tupl_assign_fwd_t<TUPL_ID>
 

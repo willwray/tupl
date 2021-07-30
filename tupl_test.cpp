@@ -1,4 +1,5 @@
 #include "tupl.hpp"
+#include "tupl_swap.hpp"
 #include <cassert>
 
 using namespace ltl;
@@ -19,12 +20,14 @@ same_ish<int> auto&& nn = mm;
 
 bool test_refs()
 {
-    int i;
+    int i, ii;
     const tupl<int&> ti{ i };
     ti = { 1 };
-    long j;
-    char c;
-    tupl<int&,long&,char&> ijc{i,j,c}; // tie
+    long j, jj;
+    char c, cc;
+    tupl<int&, long&, char&> ijc{ i,j,c }; // tie
+    tupl<int&, long&, char&> ijc2{ ii,jj,cc }; // tie
+    ltl::swap(ijc, ijc2);
     ijc = {1,2L,'d'};  // assign-through (std tuple & tie don't have this)
     auto& [x,y,z] = ijc;
   //ijc = { x, y, z }; // FAIL: selects deleted default copy-assignment

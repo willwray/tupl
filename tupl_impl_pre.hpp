@@ -90,11 +90,15 @@ struct tupl_type_map<M, TUPL_ID<T...>> {
 template <typename U, typename V = std::remove_cvref_t<U>>
   requires std::is_move_assignable_v<std::remove_all_extents_t<V>>
 using assign_fwd = std::conditional_t<
-  std::is_trivially_copyable_v<V> && sizeof(V)<=16, V,
-                 std::conditional_t<
-  std::is_lvalue_reference_v<U> || std::is_array_v<V>, V const&, V&&>>;
+ !std::is_array_v<V> &&std::is_trivially_copyable_v<V> && sizeof(V)<=16,
+   V, std::conditional_t<
+   std::is_lvalue_reference_v<U> || std::is_array_v<V>, V const&, V&&>>;
 //
 
+//
+template <typename Tupl>
+using tupl_tie_t =
+         typename tupl_type_map<std::add_lvalue_reference_t,Tupl>::type;
 //
 template <typename Tupl>
 using tupl_assign_fwd_t = typename tupl_type_map<assign_fwd,Tupl>::type;
@@ -103,6 +107,7 @@ using tupl_assign_fwd_t = typename tupl_type_map<assign_fwd,Tupl>::type;
 // tupl<> zero-size pack specialization
 template <> // tupl<T...> specializations defined in TUPL_PASS == 1
 struct TUPL_ID<> {
+  static consteval auto size() noexcept { return 0; }
   auto operator<=>(TUPL_ID const&) const = default;
   constexpr decltype(auto) operator()(auto f) const
      noexcept(noexcept(f())) { return f(); }
@@ -127,7 +132,7 @@ struct assign_to<Lr>
   value_type& l;
 
   template <tuplish R>
-    requires (tupls_assignable<L, std::remove_reference_t<R>>)
+    requires (tupls_assignable<L, std::remove_cvref_t<R>>)
   constexpr value_type& operator=(R&& r) noexcept(
     std::is_reference_v<R>
     ? tupl_types_all<R, std::is_nothrow_copy_assignable>
@@ -176,6 +181,7 @@ decltype(auto) map(T&& t, auto f) noexcept(noexcept(f(__VA_ARGS__)))\
  { return f(__VA_ARGS__); }
 
 #define R_TUPL tupl_assign_fwd_t<TUPL_ID>
+#define TUPL_TIE_T tupl_tie_t<TUPL_ID>
 
 #define TUPL_PASS 1
 #define VREPEAT_COUNT TUPL_MAX_INDEX
@@ -191,12 +197,18 @@ decltype(auto) map(T&& t, auto f) noexcept(noexcept(f(__VA_ARGS__)))\
 template <TYPENAME_DECLS>
 struct TUPL_ID<TUPL_TYPE_IDS> {
  MEMBER_DECLS
+ static consteval auto size() noexcept { return NREPEAT+1; }
+// constexpr operator const TUPL_TIE_T() { return {TUPL_DATA_IDS}; }
  friend auto operator<=>(TUPL_ID const&,TUPL_ID const&)
    requires tupl_types_all<TUPL_ID,MEMBER_DEFAULT_3WAY> = default;
  template<typename...>constexpr TUPL_ID& operator=(R_TUPL r)
    requires (tupl_val<TUPL_ID>) {return assign_to<TUPL_ID>{*this} = r;}
  template<typename...>constexpr TUPL_ID const& operator=(R_TUPL r) const
    requires (!tupl_val<TUPL_ID>) {return assign_to<TUPL_ID>{*this} = r;}
+
+// template<std::same_as<TUPL_TIE_T>R>constexpr TUPL_ID& operator=(R& r)
+// const  {return assign_to<TUPL_ID>{*this} = r;}
+
  MAP_V(TUPL_t_DATA_FWDS)
 };
 
@@ -271,6 +283,12 @@ template <typename X, typename...A>
 inline constexpr int tupl_indexof<X,TUPL_ID<A...>> = indexof<X,A...>;
 
 #undef UNREACHABLE
+
+template <int...I>
+constexpr auto getie(tuplish auto&& t) noexcept
+  -> TUPL_ID<decltype(get<I>((decltype(t))t))...> const
+     requires ((I < decltype(size(t))()) && ...)
+    { return {get<I>((decltype(t))t)...}; };
 
 template <auto...A, typename...E>
 constexpr auto dupl(TUPL_ID<E...>const& a)

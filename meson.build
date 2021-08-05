@@ -6,11 +6,13 @@ project('tupl', 'cpp',
 c_array_support_dep = subproject('c_array_support').get_variable('c_array_support_dep')
 IREPEAT_dep = subproject('IREPEAT').get_variable('IREPEAT_dep')
 
-if meson.get_compiler('cpp').get_id() == 'msvc'
+compiler_id = meson.get_compiler('cpp').get_id()
+
+if compiler_id == 'msvc' or compiler_id == 'clang-cl'
   extra_args = ['/std:c++latest','/Zc:preprocessor']
   prepro_args = ['/std:c++latest','/Zc:preprocessor','/I.','/I..\subprojects\IREPEAT','/C','/EP','/TP','/P']
   output_flag = '/Fi'
-elif meson.get_compiler('cpp').get_id() == 'clang'
+elif compiler_id == 'clang'
   extra_args = ['-std=c++20']
   prepro_args = ['-I.','-I../subprojects/IREPEAT','-MMD','-nostdinc','-C','-E','-P','-Wno-c++20-compat']
   output_flag = '-o'

@@ -68,12 +68,12 @@ inline constexpr bool tupl_types_all<TUPL_ID<T...>,P> = (P<T>() && ...);
 //
 
 // tupl_val concept: tuplish type with all object-type elements
+// (note: is_object matches unbounded array T[], allows for FAM)
 template <typename T>
 concept tupl_val = tuplish<T>
      && tupl_types_all<std::remove_cvref_t<T>,std::is_object>;
 
-// tupl_type_map<tupl<T...>, map>
-//            -> tupl<typename map<T>::type...>
+// tupl_type_map<tupl<T...>, map> -> tupl<map<T>...>
 template <template<typename...>class, typename>
 struct tupl_type_map;
 
@@ -97,7 +97,7 @@ using assign_fwd = std::conditional_t<
 
 //
 template <typename Tupl>
-using tupl_tie_t =
+using tie_t =
          typename tupl_type_map<std::add_lvalue_reference_t,Tupl>::type;
 //
 template <typename Tupl>
@@ -107,6 +107,7 @@ using tupl_assign_fwd_t = typename tupl_type_map<assign_fwd,Tupl>::type;
 // tupl<> zero-size pack specialization
 template <> // tupl<T...> specializations defined in TUPL_PASS == 1
 struct TUPL_ID<> {
+  using tie_t = TUPL_ID;
   static consteval auto size() noexcept { return 0; }
   auto operator<=>(TUPL_ID const&) const = default;
   constexpr decltype(auto) operator()(auto f) const
@@ -181,7 +182,7 @@ decltype(auto) map(T&& t, auto f) noexcept(noexcept(f(__VA_ARGS__)))\
  { return f(__VA_ARGS__); }
 
 #define R_TUPL tupl_assign_fwd_t<TUPL_ID>
-#define TUPL_TIE_T tupl_tie_t<TUPL_ID>
+#define TUPL_TIE_T tie_t<TUPL_ID>
 
 #define TUPL_PASS 1
 #define VREPEAT_COUNT TUPL_MAX_INDEX
@@ -196,6 +197,7 @@ decltype(auto) map(T&& t, auto f) noexcept(noexcept(f(__VA_ARGS__)))\
 
 template <TYPENAME_DECLS>
 struct TUPL_ID<TUPL_TYPE_IDS> {
+ using tie_t = TUPL_TIE_T const;
  MEMBER_DECLS
  static consteval auto size() noexcept { return NREPEAT+1; }
 // constexpr operator const TUPL_TIE_T() { return {TUPL_DATA_IDS}; }
@@ -283,6 +285,12 @@ template <typename X, typename...A>
 inline constexpr int tupl_indexof<X,TUPL_ID<A...>> = indexof<X,A...>;
 
 #undef UNREACHABLE
+
+constexpr auto tie(auto&...t) noexcept
+  -> TUPL_ID<decltype(t)...> const
+{
+    return { t... };
+};
 
 template <int...I>
 constexpr auto getie(tuplish auto&& t) noexcept

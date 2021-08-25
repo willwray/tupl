@@ -326,7 +326,8 @@ inline constexpr int tupl_indexof = not defined(tupl_indexof<X,T>);
 template <typename X, typename...A>
 inline constexpr int tupl_indexof<X,TUPL_ID<A...>> = indexof<X,A...>;
 
-constexpr auto tie(auto&...t) noexcept
+template <typename...T>
+constexpr auto tie(T&...t) noexcept
   -> TUPL_ID<decltype(t)...> const
 {
     return { t... };

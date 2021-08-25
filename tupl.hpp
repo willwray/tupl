@@ -14,12 +14,14 @@
   A C++20 tuple type implemented as aggregate struct specializations.
   Configured by default for up to 16 members of any allowed type.
   
-   Depends only on <compare> for three-way operator <=> comparisons.
+   Depends on <concepts> for assignable_from, ranges::swap CPO, etc.
+   Depends on <compare> for three-way operator <=> comparisons, etc.
+  (MSVC implementation also depends on <cstdint> for uintptr_t.)
 
   The macro implementation in "tupl_impl_pre.hpp" should be preprocessed
-  on installation to generate "tupl_impl.hpp" header. It's best to auto-
-  mate this preprocessing step. The 'pre' header is used as fallback if
-  the tupl_impl.hpp header is not on the include path.
+  on installation to generate "tupl_impl.hpp" header, but not obligatory;
+  if tupl_impl.hpp header isn't found on the include search paths then
+  tupl_impl_pre.hpp is used instead (it may give worse error messages).
 
   You can manually preprocess tupl_impl_pre.hpp -> tupl_impl.hpp
   with a command line like:
@@ -40,10 +42,22 @@
   or to generate with no namespace -DNAMESPACE_ID=
 */
 
-#include <compare>
-
 #include "array_compare.hpp"
 #include "array_assign.hpp"
+
+// same_ish<T,U> concept utility (should be in some util lib or std)
+template <typename T, typename U>
+concept same_ish = std::same_as<U, std::remove_cvref_t<T>>;
+
+// UNREACHABLE: platform-specific annotation for unreachable code
+// till there's a portable or standardized annotation (c.f. P2390 P0627)
+#ifdef __GNUC__
+#define UNREACHABLE() __builtin_unreachable()
+#elif defined(_MSC_VER)
+#define UNREACHABLE() __assume(false)
+#else
+#define UNREACHABLE()
+#endif
 
 #if __has_include("tupl_impl.hpp")
 #include "tupl_impl.hpp" // Do not edit generated file "tupl_impl.hpp"
@@ -51,5 +65,7 @@
 #include "tupl_impl_pre.hpp" // If you edit "tupl_impl_pre.hpp" then
                              // remember to regenerate "tupl_impl.hpp"
 #endif
+
+#undef UNREACHABLE
 
 #endif

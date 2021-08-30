@@ -10,15 +10,15 @@ compiler_id = meson.get_compiler('cpp').get_id()
 
 if compiler_id == 'msvc' or compiler_id == 'clang-cl'
   extra_args = ['/std:c++latest','/Zc:preprocessor']
-  prepro_args = ['/std:c++latest','/Zc:preprocessor','/I.','/I..\subprojects\IREPEAT','/C','/EP','/TP','/P']
+  prepro_args = ['/std:c++latest','/Zc:preprocessor','/I.','-I..','/I..\subprojects\IREPEAT','/C','/EP','/TP','/P']
   output_flag = '/Fi'
 elif compiler_id == 'clang'
   extra_args = ['-std=c++20']
-  prepro_args = ['-I.','-I../subprojects/IREPEAT','-MMD','-nostdinc','-C','-E','-P','-Wno-c++20-compat']
+  prepro_args = ['-I.','-I..','-I../subprojects/IREPEAT','-MMD','-nostdinc','-C','-E','-P','-Wno-c++20-compat']
   output_flag = '-o'
 else
   extra_args = ['-std=c++20']
-  prepro_args = ['-I.','-I../subprojects/IREPEAT','-MMD','-nostdinc','-C','-E','-P']
+  prepro_args = ['-I.','-I..','-I../subprojects/IREPEAT','-MMD','-nostdinc','-C','-E','-P']
   output_flag = '-o'
 endif
 
@@ -39,7 +39,7 @@ tupl_dep = declare_dependency(
 ).partial_dependency(includes: true, compile_args: true, sources: true)
 
 test('test tupl',
-  executable('test_tupl', 'tupl_test.cpp',
-             dependencies: [c_array_support_dep, IREPEAT_dep, tupl_dep],
+  executable('test_tupl', 'tests/tupl_test.cpp',
+             dependencies: [c_array_support_dep, IREPEAT_dep, tupl_dep]
             )
 )

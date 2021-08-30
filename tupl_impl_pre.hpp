@@ -225,7 +225,7 @@ decltype(auto) map(T&& t, auto f) noexcept(noexcept(f(__VA_ARGS__)))\
 
 #define TUPL_PASS 1
 #define VREPEAT_COUNT TUPL_MAX_INDEX
-#define VREPEAT_MACRO ../../tupl_impl_pre.hpp
+#define VREPEAT_MACRO tupl_impl_pre.hpp
 #include "VREPEAT.hpp"
 
 #undef TUPL_PASS

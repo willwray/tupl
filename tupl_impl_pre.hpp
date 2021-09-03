@@ -43,22 +43,17 @@ template <typename...T> struct TUPL_ID;
 //
 
 namespace impl {
-template <typename T, int N> using TN = T[N];
-
+// decay_f<T> decay function type (hard fail for abominable functions)
 template <typename T, typename U = std::remove_cvref_t<T>>
 using decay_f = std::conditional_t<std::is_function_v<U>,U*,U>;
 }
 // CTAD deduce values including arrays (i.e. no decay, unlike std tuple)
 template <typename...E>
 TUPL_ID(E&&...) -> TUPL_ID<impl::decay_f<E>...>;
-//
+// CTAD deduce first argument as an rvalue array from braced init-list
 template <typename T, int N, typename...E>
-tupl(impl::TN<T,N>&&,E&&...) -> tupl<impl::TN<T,N>,impl::decay_f<E>...>;
+TUPL_ID(T(&&)[N], E&&...) -> tupl<T[N], impl::decay_f<E>...>;
 //
-
-// size(tupl): the number of tupl elements as an integral constant
-template <typename...A> constexpr auto size(TUPL_ID<A...> const&) ->
-  std::integral_constant<std::size_t,sizeof...(A)> { return {}; }
 
 // is_tupl trait
 template<class T>   inline constexpr bool is_tupl = false;
@@ -66,6 +61,20 @@ template<class...A> inline constexpr bool is_tupl<TUPL_ID<A...>> = true;
 //
 // tuplish concept
 template <typename T> concept tuplish = is_tupl<std::remove_cvref_t<T>>;
+
+// tupl_size variable template (unrelated to std::tuple_size)
+template <tuplish T> extern const std::size_t tupl_size;
+template <typename...U> inline constexpr auto tupl_size<TUPL_ID<U...>>
+         = sizeof...(U);
+
+// size<Tupl>(): the number of tupl elements as an integral constant
+template <tuplish T> constexpr auto size()
+-> std::integral_constant<std::size_t,tupl_size<std::remove_cvref_t<T>>>
+{ return {}; }
+// size(tupl): the number of tupl elements as an integral constant
+template <tuplish T> constexpr auto size(T const&)
+-> std::integral_constant<std::size_t,tupl_size<std::remove_cvref_t<T>>>
+{ return {}; }
 
 // tupl_types_all meta function
 template <typename, template<typename>class P>
@@ -88,7 +97,9 @@ template <typename T> using is_object_lval_ref =
 // tupl_tie concept: tuplish type with all reference-to-object elements
 // (note: is_object matches unbounded array T[] so T(&)[] is admitted)
 template <typename T>
-concept tupl_tie = tuplish<T>
+concept tupl_tie =
+        tuplish<T>
+     && ! std::same_as<std::remove_cvref_t<T>, tupl<>>
      && tupl_types_all<std::remove_cvref_t<T>, is_object_lval_ref>;
 
 // tupl_type_map<tupl<T...>, map> -> tupl<map<T>...>
@@ -145,7 +156,7 @@ struct TUPL_ID<>
 {
   using tie_t = TUPL_ID;
 
-  static consteval auto size() noexcept { return 0; }
+  static consteval std::size_t size() noexcept { return {}; }
 
   auto operator<=>(TUPL_ID const&) const = default;
 
@@ -269,7 +280,7 @@ struct TUPL_ID<TUPL_TYPE_IDS>
 template <tuplish T> requires (! tupl_types_all<T,MEMBER_DEFAULT_3WAY>
                               && tupl_types_all<T,THREE_WAY_COMPARABLE>)
 constexpr auto operator<=>(T const& l,T const& r) noexcept {
- constexpr auto s = decltype(size(l))();
+ constexpr auto s = tupl_size<T>;
  constexpr compare_three_way cmp;
 #define MACRO(N) if constexpr(HEXLIT(N)<s){if(auto c=cmp(\
 l.TUPL_DATA_ID(N),r.TUPL_DATA_ID(N));c!=0||1+HEXLIT(N)==s)return c;}
@@ -287,7 +298,7 @@ template <tuplish T> requires (! tupl_types_all<T,MEMBER_DEFAULT_3WAY>
                             && ! tupl_types_all<T,THREE_WAY_COMPARABLE>
                               && tupl_types_all<T,EQUALITY_COMPARABLE>)
 constexpr bool operator==(T const& l,T const& r) noexcept {
-    constexpr auto s = decltype(size(l))();
+    constexpr auto s = tupl_size<T>;
 #define MACRO(N) if constexpr(HEXLIT(N)<s){if(bool c=\
 l.TUPL_DATA_ID(N)==r.TUPL_DATA_ID(N);!c||1+HEXLIT(N)==s)return c;}
  IREPEAT(TUPL_MAX_INDEX,MACRO,NOSEP)
@@ -297,7 +308,7 @@ l.TUPL_DATA_ID(N)==r.TUPL_DATA_ID(N);!c||1+HEXLIT(N)==s)return c;}
 
 // get<I>(t)
 template <int I> constexpr auto&& get(tuplish auto&& t) noexcept
-  requires (I < decltype(size(t))())
+  requires (I < t.size())
 {
  using T = decltype(t);
 #define ELSE() else
@@ -336,7 +347,7 @@ constexpr auto tie(T&...t) noexcept
 template <int...I>
 constexpr auto getie(tuplish auto&& t) noexcept
   -> TUPL_ID<decltype(get<I>((decltype(t))t))...> const
-     requires ((I < decltype(size(t))()) && ...)
+     requires ((I < t.size()) && ...)
     { return {get<I>((decltype(t))t)...}; };
 
 template <auto...A, typename...E>

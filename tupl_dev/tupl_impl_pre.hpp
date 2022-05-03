@@ -54,13 +54,15 @@ TUPL_ID(E&&...) -> TUPL_ID<impl::decay_f<E>...>;
 template <typename T, int N, typename...E>
 TUPL_ID(T(&&)[N], E&&...) -> tupl<T[N], impl::decay_f<E>...>;
 //
-
+//template<class T,class...A> auto to_tupl(T<A...>const&) -> TUPL_ID<A...>;
+//template<class T> using to_tupl = decltype(as_tupl(std::declval<T>()));
 // is_tupl trait
-template<class T>   inline constexpr bool is_tupl = false;
-template<class...A> inline constexpr bool is_tupl<TUPL_ID<A...>> = true;
+//template<class T> inline constexpr bool is_tupl = false;
+//template<class...A> inline constexpr bool is_tupl<TUPL_ID<A...>> = true;
 //
-// tuplish concept
-template <typename T> concept tuplish = is_tupl<std::remove_cvref_t<T>>;
+// tuplish concept, requires a 'tupl_t' member alias
+template <typename T> concept tuplish = std::is_convertible_v<T,
+          typename std::remove_cvref_t<T>::tupl_t>;
 
 // tupl_size variable template (unrelated to std::tuple_size)
 template <tuplish T> extern const std::size_t tupl_size;
@@ -154,7 +156,8 @@ using tupl_assign_fwd_t = typename tupl_type_map<assign_fwd,Tupl>::type;
 template <> // tupl<T...> specializations defined in TUPL_PASS == 1
 struct TUPL_ID<>
 {
-  using tie_t = TUPL_ID;
+//  using tie_t = TUPL_ID;
+  using tupl_t = TUPL_ID;
 
   static consteval std::size_t size() noexcept { return {}; }
 
@@ -232,11 +235,11 @@ decltype(auto) map(T&& t, auto f) noexcept(noexcept(f(__VA_ARGS__)))\
  { return f(__VA_ARGS__); }
 
 #define R_TUPL tupl_assign_fwd_t<TUPL_ID>
-#define TUPL_TIE_T tupl_tie_t<TUPL_ID>
+//#define TUPL_TIE_T tupl_tie_t<TUPL_ID>
 
 #define TUPL_PASS 1
 #define VREPEAT_COUNT TUPL_MAX_INDEX
-#define VREPEAT_MACRO tupl_impl_pre.hpp
+#define VREPEAT_MACRO tupl_dev/tupl_impl_pre.hpp
 #include "VREPEAT.hpp"
 
 #undef TUPL_PASS
@@ -248,7 +251,8 @@ decltype(auto) map(T&& t, auto f) noexcept(noexcept(f(__VA_ARGS__)))\
 template <TYPENAME_DECLS>
 struct TUPL_ID<TUPL_TYPE_IDS>
 {
- using tie_t = TUPL_TIE_T const;
+// using tie_t = TUPL_TIE_T const;
+ using tupl_t = TUPL_ID;
 
  MEMBER_DECLS
 
@@ -269,7 +273,7 @@ struct TUPL_ID<TUPL_TYPE_IDS>
    requires tupl_tie<TUPL_ID>
    {return assign_to<TUPL_ID>{*this} = r;}
 
- constexpr auto& operator=(std::same_as<TUPL_TIE_T> auto const& r) const
+ constexpr auto& operator=(std::same_as<tupl_tie_t<TUPL_ID>> auto const& r) const
    {return assign_to<TUPL_ID>{*this} = r;}
 
  MAP_V(TUPL_t_DATA_FWDS)

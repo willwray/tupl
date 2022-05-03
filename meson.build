@@ -1,45 +1,15 @@
 project('tupl', 'cpp',
-  default_options : ['warning_level=3'],
-  version : '0.1'
+  default_options : ['cpp_std=c++20'],
+  version : '0.3'
 )
 
 c_array_support_dep = subproject('c_array_support').get_variable('c_array_support_dep')
-IREPEAT_dep = subproject('IREPEAT').get_variable('IREPEAT_dep')
-
-compiler_id = meson.get_compiler('cpp').get_id()
-
-if compiler_id == 'msvc' or compiler_id == 'clang-cl'
-  extra_args = ['/std:c++latest','/Zc:preprocessor']
-  prepro_args = ['/std:c++latest','/Zc:preprocessor','/I.','-I..','/I..\subprojects\IREPEAT','/C','/EP','/TP','/P']
-  output_flag = '/Fi'
-elif compiler_id == 'clang'
-  extra_args = ['-std=c++20']
-  prepro_args = ['-I.','-I..','-I../subprojects/IREPEAT','-MMD','-nostdinc','-C','-E','-P','-Wno-c++20-compat']
-  output_flag = '-o'
-else
-  extra_args = ['-std=c++20']
-  prepro_args = ['-I.','-I..','-I../subprojects/IREPEAT','-MMD','-nostdinc','-C','-E','-P']
-  output_flag = '-o'
-endif
-
-tupl_impl_header = custom_target('tupl_impl.hpp',
-  input: 'tupl_impl_pre.hpp',
-  output: 'tupl_impl.hpp',
-  command: [meson.get_compiler('cpp').cmd_array(), prepro_args, output_flag+'@OUTPUT@', '@INPUT@'],
-  depfile: 'tupl_impl.d',
-  install: true,
-  install_dir: meson.source_root()
-)
 
 tupl_dep = declare_dependency(
-  dependencies: [c_array_support_dep, IREPEAT_dep],
+  dependencies: [c_array_support_dep],
   include_directories : include_directories('.'),
-  compile_args : extra_args,
-  sources : [tupl_impl_header]
-).partial_dependency(includes: true, compile_args: true, sources: true)
-
-test('test tupl',
-  executable('test_tupl', 'tests/tupl_test.cpp',
-             dependencies: [c_array_support_dep, IREPEAT_dep, tupl_dep]
-            )
 )
+
+IREPEAT_dep = subproject('IREPEAT').get_variable('IREPEAT_dep')
+
+subdir('tupl_dev')

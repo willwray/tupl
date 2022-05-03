@@ -4,6 +4,10 @@
 
 using namespace ltl;
 
+struct derived_tupl : tupl<int> {};
+static_assert( tuplish<derived_tupl> );
+static_assert(! tuplish<int> );
+
 template <typename T>
 constexpr std::add_const_t<T>& as_const(T& t) noexcept { return t; }
 
@@ -116,6 +120,29 @@ void big() {
     //br = {(BIG const&)bc}; // disambiguated - exact match
 //    assert( )
 }
+struct Ex { void f() const; };
+using F = void()const;
+F Ex::* fmp = &Ex::f;
+
+tupl tup = {"c++",true}; // deduces tupl<char[4],bool>
+auto& tup_copy_assign(char(&cstr)[4],bool b)
+{
+  return tup = ltl::tie(cstr,b); // copies char[4] and bool
+}
+using Tup = decltype(tup);
+
+static_assert( std::is_same_v< Tup, tupl<char[4],bool>>
+            && std::is_aggregate_v< Tup >
+            && std::is_standard_layout_v< Tup >
+            && std::is_trivial_v< Tup >
+            && std::is_trivially_copyable_v< Tup >
+);
+template<tupl> struct structural;
+using is_structural = structural<{"tupl"}>;
+
+auto ass = []{
+     tup = {"c--",false}; // copy-assigns char[4] and bool
+};
 
 int main()
 {
